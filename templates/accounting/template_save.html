@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block header_title %}Guardar Asiento como Plantilla{% endblock %}
+{% block header_subtitle %}Reutiliza este asiento cada mes sin volver a escribirlo{% endblock %}
+
+{% block content %}
+<div class="form-card form-card-wide">
+    <form method="POST" action="{% url 'template_save_existing' source_entry.id %}">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="name">Nombre de la Plantilla</label>
+            <input type="text" id="name" name="name" class="form-control" value="{{ suggested_name }}" placeholder="ej: Alícuota Arriendo Local" required>
+            <div class="form-hint">Ponle un nombre claro y reconocible para usarla cada mes.</div>
+        </div>
+
+        <hr class="divider">
+
+        <h4 class="mb-sm"><i class="fa-solid fa-list-check"></i> Asiento que se copiará</h4>
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Cuenta Contable</th>
+                    <th>Detalle</th>
+                    <th class="text-right">Debe ($)</th>
+                    <th class="text-right">Haber ($)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for line in prefill_lines %}
+                    <tr>
+                        <td><code>{{ line.account_display }}</code></td>
+                        <td>{{ line.concept|default:"-" }}</td>
+                        <td></td>
+                        <td class="text-right">{% if line.debit > 0 %}${{ line.debit|floatformat:2 }}{% else %}-{% endif %}</td>
+                        <td class="text-right">{% if line.credit > 0 %}${{ line.credit|floatformat:2 }}{% else %}-{% endif %}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                <i class="fa-solid fa-save"></i> Guardar como Plantilla
+            </button>
+            <a href="{% url 'journal_entry_list' %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

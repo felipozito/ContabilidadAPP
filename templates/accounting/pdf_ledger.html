@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        @page { size: A4; margin: 0.35cm; }
+        body { font-family: Helvetica, Arial, sans-serif; font-size: 6.5pt; color: #000; margin: 0; padding: 0; }
+        .header { text-align: center; border-bottom: 1px solid #000; padding-bottom: 2px; margin-bottom: 4px; }
+        .company-name { font-size: 9pt; font-weight: bold; }
+        .title { font-size: 8pt; font-weight: bold; margin-top: 1px; }
+        .info { font-size: 6pt; margin-top: 1px; }
+        .account-title { font-size: 7pt; font-weight: bold; margin: 5px 0 2px 0; }
+        table { width: 100%; border-collapse: collapse; }
+        th { border-bottom: 1px solid #000; padding: 1px 2px; text-align: left; font-size: 6pt; }
+        td { border-bottom: 1px solid #ddd; padding: 1px 2px; }
+        .num { text-align: right; }
+        .opening { font-style: italic; }
+        .totals { font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="company-name">{{ company.name }}</div>
+        <div class="title">LIBRO MAYOR</div>
+        <div class="info">RUC: {{ company.tax_id }} | Periodo: {{ data.start_date }} al {{ data.end_date }}</div>
+    </div>
+
+    {% for item in data.accounts %}
+        <div class="account-title">{{ item.account.code }} - {{ item.account.name }}</div>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 9%;">Fecha</th>
+                    <th>Detalle</th>
+                    <th style="width: 10%;">Referencia</th>
+                    <th style="width: 11%;" class="num">Debe</th>
+                    <th style="width: 11%;" class="num">Haber</th>
+                    <th style="width: 11%;" class="num">Saldo</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="opening">
+                    <td colspan="3">SALDO INICIAL</td>
+                    <td class="num">-</td>
+                    <td class="num">-</td>
+                    <td class="num">{{ item.opening_balance|floatformat:2 }}</td>
+                </tr>
+                {% for mov in item.movements %}
+                    <tr>
+                        <td>{{ mov.date|date:"d/m/Y" }}</td>
+                        <td>#{{ mov.entry_number }} - {{ mov.concept }}{% if mov.line_concept %} ({{ mov.line_concept }}){% endif %}</td>
+                        <td>{{ mov.reference|default:"-" }}</td>
+                        <td class="num">{% if mov.debit > 0 %}{{ mov.debit|floatformat:2 }}{% else %}-{% endif %}</td>
+                        <td class="num">{% if mov.credit > 0 %}{{ mov.credit|floatformat:2 }}{% else %}-{% endif %}</td>
+                        <td class="num">{{ mov.balance|floatformat:2 }}</td>
+                    </tr>
+                {% endfor %}
+                <tr class="totals">
+                    <td colspan="3">SUMAS DEL PERIODO</td>
+                    <td class="num">{{ item.total_debit|floatformat:2 }}</td>
+                    <td class="num">{{ item.total_credit|floatformat:2 }}</td>
+                    <td class="num">{{ item.closing_balance|floatformat:2 }}</td>
+                </tr>
+            </tbody>
+        </table>
+    {% empty %}
+        <p>No hay movimientos en el periodo seleccionado.</p>
+    {% endfor %}
+</body>
+</html>

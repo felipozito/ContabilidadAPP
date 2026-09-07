@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block header_title %}{% if form.instance.pk %}Editar Cuenta {{ form.instance.code }}{% else %}Nueva Cuenta Contable{% endif %}{% endblock %}
+{% block header_subtitle %}{% if form.instance.pk %}Modificar detalles de la cuenta {{ form.instance.name }}{% else %}Agregar una nueva cuenta al plan contable de {{ company.name }}{% endif %}{% endblock %}
+
+
+{% block content %}
+<div class="form-card">
+    <form method="POST">
+        {% csrf_token %}
+
+        <!-- Errores generales del formulario -->
+        {% if form.non_field_errors %}
+            <div class="alert alert-error">
+                {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="form-group">
+            <label for="{{ form.code.id_for_label }}">Código Decimal (ej: 1.1.01.003)</label>
+            {{ form.code }}
+            {% for error in form.code.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+        </div>
+
+        <div class="form-group">
+            <label for="{{ form.name.id_for_label }}">Nombre de la Cuenta</label>
+            {{ form.name }}
+            {% for error in form.name.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+        </div>
+
+        <div class="form-group">
+            <label for="{{ form.account_type.id_for_label }}">Naturaleza de la Cuenta</label>
+            {{ form.account_type }}
+            <small class="form-hint">Si se elige una cuenta padre, la naturaleza se hereda automáticamente de ella.</small>
+            {% for error in form.account_type.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+        </div>
+
+        <div class="form-group">
+            <label for="{{ form.kind.id_for_label }}">Tipo de Cuenta</label>
+            {{ form.kind }}
+            <small class="form-hint">Recuerde: Solo en las cuentas de "Movimiento / Detalle" se pueden registrar asientos contables.</small>
+            {% for error in form.kind.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+        </div>
+
+        <div class="form-group">
+            <label for="{{ form.parent.id_for_label }}">Cuenta Padre (Agrupadora)</label>
+            {{ form.parent }}
+            {% for error in form.parent.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-save"></i> Guardar Cambios</button>
+            <a href="{% url 'account_list' %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

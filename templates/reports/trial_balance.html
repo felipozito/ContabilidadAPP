@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block header_title %}Balance de Comprobación (Sumas y Saldos){% endblock %}
+{% block header_subtitle %}{{ company.name }} | RUC: {{ company.tax_id }}{% endblock %}
+
+{% block content %}
+<div class="table-card">
+    <div class="table-header">
+        <form method="GET" class="report-toolbar">
+            <div>
+                <label class="report-label">Desde:</label>
+                <input type="date" name="start_date" class="form-select-sm" value="{{ start_date }}">
+            </div>
+            <div>
+                <label class="report-label">Hasta:</label>
+                <input type="date" name="end_date" class="form-select-sm" value="{{ end_date }}">
+            </div>
+            <button type="submit" class="btn btn-secondary btn-sm">
+                <i class="fa-solid fa-filter"></i> Filtrar
+            </button>
+        </form>
+
+        <div class="report-actions">
+            <a href="?start_date={{ start_date }}&end_date={{ end_date }}&export=excel" class="btn btn-success btn-sm">
+                <i class="fa-solid fa-file-excel"></i> Exportar a Excel (.xlsx)
+            </a>
+        </div>
+    </div>
+
+    {% if data.lines %}
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Cuenta Contable</th>
+                    <th class="text-right">Suma Debe ($)</th>
+                    <th class="text-right">Suma Haber ($)</th>
+                    <th class="text-right">Saldo Deudor ($)</th>
+                    <th class="text-right">Saldo Acreedor ($)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for line in data.lines %}
+                    <tr>
+                        <td><code>{{ line.account.code }}</code></td>
+                        <td>{{ line.account.name }}</td>
+                        <td class="text-right">${{ line.sum_debit|floatformat:2 }}</td>
+                        <td class="text-right">${{ line.sum_credit|floatformat:2 }}</td>
+                        <td class="text-right">
+                            {% if line.debt_balance > 0 %}<strong>${{ line.debt_balance|floatformat:2 }}</strong>{% else %}-{% endif %}
+                        </td>
+                        <td class="text-right">
+                            {% if line.cred_balance > 0 %}<strong>${{ line.cred_balance|floatformat:2 }}</strong>{% else %}-{% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="tfoot-total tfoot-right-label">
+                    <td colspan="2">TOTALES GENERALES:</td>
+                    <td class="text-right">${{ data.total_debit_sum|floatformat:2 }}</td>
+                    <td class="text-right">${{ data.total_credit_sum|floatformat:2 }}</td>
+                    <td class="text-right">${{ data.total_debt_balance|floatformat:2 }}</td>
+                    <td class="text-right">${{ data.total_cred_balance|floatformat:2 }}</td>
+                </tr>
+            </tfoot>
+        </table>
+
+        {% if data.is_balanced %}
+            <div class="status-bar success">
+                <i class="fa-solid fa-circle-check"></i> La contabilidad está perfectamente cuadrada (Saldo Deudor = Saldo Acreedor).
+            </div>
+        {% else %}
+            <div class="status-bar error">
+                <i class="fa-solid fa-triangle-exclamation"></i> Se detectó una diferencia en saldos. Favor revisar los asientos en borrador.
+            </div>
+        {% endif %}
+    {% else %}
+        <div class="empty-state">
+            <p class="text-secondary">No hay movimientos contables registrados en el periodo seleccionado.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

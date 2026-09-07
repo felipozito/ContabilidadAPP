@@ -1,0 +1,317 @@
+{% extends "base.html" %}
+
+{% block header_title %}{% if template %}Editar Plantilla{% else %}Nueva Plantilla de Asiento{% endif %}{% endblock %}
+{% block header_subtitle %}Define un asiento que repetirás cada mes para reutilizarlo sin reescribirlo{% endblock %}
+
+{% block content %}
+<div class="form-card form-card-wide">
+    <form method="POST" id="entryForm" onsubmit="return validateLines()">
+        {% csrf_token %}
+        <div class="form-grid-3">
+            <div class="form-group">
+                <label for="name">Nombre de la Plantilla</label>
+                <input type="text" id="name" name="name" class="form-control" placeholder="ej: Alícuota Arriendo Local" value="{{ template.name|default:'' }}" required>
+            </div>
+            <div class="form-group">
+                <label for="entry_type">Tipo de Comprobante</label>
+                <select id="entry_type" name="entry_type" class="form-control" required>
+                    <option value="GENERAL" {% if template.entry_type == 'GENERAL' or not template %}selected{% endif %}>Diario / Ajuste</option>
+                    <option value="OPENING" {% if template.entry_type == 'OPENING' %}selected{% endif %}>Apertura</option>
+                    <option value="PAYMENT" {% if template.entry_type == 'PAYMENT' %}selected{% endif %}>Cobro / Pago</option>
+                    <option value="CLOSING" {% if template.entry_type == 'CLOSING' %}selected{% endif %}>Cierre</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="reference">Nro. Documento / Referencia (opcional)</label>
+                <input type="text" id="reference" name="reference" class="form-control" placeholder="ej: 210" value="{{ template.reference|default:'' }}">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="concept">Glosa / Concepto del Asiento</label>
+            <input type="text" id="concept" name="concept" class="form-control" placeholder="Registro de pago mensual..." value="{{ template.concept|default:'' }}" required>
+        </div>
+
+        <hr class="divider">
+
+        <div class="flex-between mb-sm">
+            <h4 class="mb-xs"><i class="fa-solid fa-list-check"></i> Detalle de Cuentas (Líneas de Plantilla)</h4>
+        </div>
+
+        <div class="form-hint flex gap-sm mb">
+            <i class="fa-solid fa-keyboard"></i>
+            <span>Atajos:</span>
+            <span><kbd>Enter</kbd> avanzar</span>
+            <span><kbd>Ctrl</kbd>+<kbd>Enter</kbd> agregar línea</span>
+        </div>
+
+        <table class="custom-table" id="linesTable">
+            <thead>
+                <tr>
+                    <th class="col-45">Cuenta Contable (Movimiento)</th>
+                    <th class="col-25">Detalle / Observación</th>
+                    <th class="col-15">Debe ($)</th>
+                    <th class="col-15">Haber ($)</th>
+                    <th class="col-5"></th>
+                </tr>
+            </thead>
+            <tbody id="linesContainer">
+                {% if template.lines.all %}
+                    {% for line in template.lines.all %}
+                        <tr class="line-row">
+                            <td>
+                                <div class="account-picker">
+                                    <input type="hidden" name="account_id[]" class="account-id-input" value="{{ line.account_id }}">
+                                    <input type="text" class="form-control account-search-input" placeholder="Escribir cuenta o código..." autocomplete="off" value="{{ line.account.name }} - {{ line.account.code }}" data-selected="1">
+                                </div>
+                            </td>
+                            <td><input type="text" name="line_concept[]" class="form-control line-concept-input" placeholder="Línea" value="{{ line.concept|default:'' }}"></td>
+                            <td><input type="number" step="0.01" min="0" name="debit[]" class="form-control debit-input" value="{{ line.debit|default:'0.00' }}"></td>
+                            <td><input type="number" step="0.01" min="0" name="credit[]" class="form-control credit-input" value="{{ line.credit|default:'0.00' }}"></td>
+                            <td><button type="button" class="btn btn-secondary btn-sm btn-icon" onclick="removeRow(this)"><i class="fa-solid fa-trash text-danger"></i></button></td>
+                        </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr class="line-row">
+                        <td>
+                            <div class="account-picker">
+                                <input type="hidden" name="account_id[]" class="account-id-input">
+                                <input type="text" class="form-control account-search-input" placeholder="Escribir cuenta o código..." autocomplete="off">
+                            </div>
+                        </td>
+                        <td><input type="text" name="line_concept[]" class="form-control line-concept-input" placeholder="Línea 1"></td>
+                        <td><input type="number" step="0.01" min="0" name="debit[]" class="form-control debit-input" value="0.00"></td>
+                        <td><input type="number" step="0.01" min="0" name="credit[]" class="form-control credit-input" value="0.00"></td>
+                        <td><button type="button" class="btn btn-secondary btn-sm btn-icon" onclick="removeRow(this)"><i class="fa-solid fa-trash text-danger"></i></button></td>
+                    </tr>
+                    <tr class="line-row">
+                        <td>
+                            <div class="account-picker">
+                                <input type="hidden" name="account_id[]" class="account-id-input">
+                                <input type="text" class="form-control account-search-input" placeholder="Escribir cuenta o código..." autocomplete="off">
+                            </div>
+                        </td>
+                        <td><input type="text" name="line_concept[]" class="form-control line-concept-input" placeholder="Línea 2"></td>
+                        <td><input type="number" step="0.01" min="0" name="debit[]" class="form-control debit-input" value="0.00"></td>
+                        <td><input type="number" step="0.01" min="0" name="credit[]" class="form-control credit-input" value="0.00"></td>
+                        <td><button type="button" class="btn btn-secondary btn-sm btn-icon" onclick="removeRow(this)"><i class="fa-solid fa-trash text-danger"></i></button></td>
+                    </tr>
+                {% endif %}
+            </tbody>
+            <tfoot>
+                <tr class="row-totals">
+                    <td colspan="2" class="text-right">TOTALES:</td>
+                    <td><span id="totalDebitText">$0.00</span></td>
+                    <td><span id="totalCreditText">$0.00</span></td>
+                    <td></td>
+                </tr>
+                <tr class="row-balance" id="balanceStatusRow">
+                    <td colspan="5" class="text-center" id="balanceStatusText">
+                        <i class="fa-solid fa-triangle-exclamation"></i> El asiento está desbalanceado. Diferencia: $0.00
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <div class="mt">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="addRow(true)">
+                <i class="fa-solid fa-plus"></i> Agregar Línea
+            </button>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-save"></i> Guardar Plantilla</button>
+            <a href="{% url 'template_list' %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const ACCOUNTS = {{ account_options_json|safe }};
+
+function norm(s) {
+    return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+function closeDropdown(picker) {
+    const ul = picker.querySelector('.account-dropdown');
+    if (ul) ul.hidden = true;
+}
+
+function renderOptions(picker, query) {
+    let ul = picker.querySelector('.account-dropdown');
+    if (!ul) { ul = document.createElement('ul'); ul.className = 'account-dropdown'; picker.appendChild(ul); }
+    const q = norm(query);
+    const matches = ACCOUNTS.filter(a => {
+        if (!q) return true;
+        return norm(a.name + ' ' + a.code).includes(q);
+    }).slice(0, 60);
+
+    ul.innerHTML = '';
+    if (!matches.length) {
+        const li = document.createElement('li');
+        li.className = 'account-dropdown-empty';
+        li.textContent = 'Sin coincidencias';
+        ul.appendChild(li);
+    } else {
+        matches.forEach((a, idx) => {
+            const li = document.createElement('li');
+            li.className = 'account-option' + (idx === 0 ? ' active' : '');
+            li.dataset.id = a.id;
+            li.innerHTML = '<span class="acc-name"></span><span class="acc-code"></span>';
+            li.querySelector('.acc-name').textContent = a.name;
+            li.querySelector('.acc-code').textContent = a.code;
+            li.addEventListener('mousedown', (e) => { e.preventDefault(); selectAccount(picker, a); });
+            ul.appendChild(li);
+        });
+    }
+    ul.hidden = false;
+}
+
+function selectAccount(picker, acc) {
+    const hidden = picker.querySelector('.account-id-input');
+    const input = picker.querySelector('.account-search-input');
+    hidden.value = acc.id;
+    input.value = acc.name + ' - ' + acc.code;
+    input.dataset.selected = '1';
+    input.dataset.selectedValue = input.value;
+    input.classList.remove('is-invalid');
+    closeDropdown(picker);
+    focusNextField(input);
+}
+
+function focusNextField(el) {
+    const row = el.closest('.line-row');
+    const inputs = row.querySelectorAll('.account-search-input, .line-concept-input, .debit-input, .credit-input');
+    const idx = Array.prototype.indexOf.call(inputs, el);
+    if (idx >= 0 && idx < inputs.length - 1) inputs[idx + 1].focus();
+}
+
+function getHighlighted(picker) {
+    const ul = picker.querySelector('.account-dropdown');
+    const el = ul.querySelector('.account-option.active');
+    if (!el) return null;
+    return ACCOUNTS.find(a => a.id == el.dataset.id) || null;
+}
+
+function moveHighlight(picker, dir) {
+    const ul = picker.querySelector('.account-dropdown');
+    const items = ul.querySelectorAll('.account-option');
+    if (!items.length) return;
+    let cur = ul.querySelector('.account-option.active');
+    let idx = Array.prototype.indexOf.call(items, cur);
+    if (idx < 0) idx = 0;
+    idx = (idx + dir + items.length) % items.length;
+    items.forEach(i => i.classList.remove('active'));
+    items[idx].classList.add('active');
+    items[idx].scrollIntoView({ block: 'nearest' });
+}
+
+function isOpen(picker) {
+    const ul = picker.querySelector('.account-dropdown');
+    return ul && !ul.hidden;
+}
+
+function calcTotals() {
+    let totalD = 0, totalC = 0;
+    document.querySelectorAll('.debit-input').forEach(i => totalD += parseFloat(i.value || 0));
+    document.querySelectorAll('.credit-input').forEach(i => totalC += parseFloat(i.value || 0));
+    document.getElementById('totalDebitText').innerText = '$' + totalD.toFixed(2);
+    document.getElementById('totalCreditText').innerText = '$' + totalC.toFixed(2);
+    const diff = Math.abs(totalD - totalC);
+    const statusRow = document.getElementById('balanceStatusRow');
+    const statusText = document.getElementById('balanceStatusText');
+    const btnSubmit = document.querySelector('button[type=submit]');
+    if (totalD > 0 && diff < 0.005) {
+        statusRow.style.background = '#ECFDF5';
+        statusRow.style.color = '#065F46';
+        statusText.innerHTML = '<i class="fa-solid fa-circle-check"></i> Asiento Balanceado (Partida Doble Cuadrada)';
+        btnSubmit.disabled = false;
+    } else {
+        statusRow.style.background = '#FEF2F2';
+        statusRow.style.color = '#991B1B';
+        statusText.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Asiento Desbalanceado. Diferencia: $' + diff.toFixed(2);
+        btnSubmit.disabled = (totalD === 0 && totalC === 0);
+    }
+}
+
+function addRow(focusNew) {
+    const container = document.getElementById('linesContainer');
+    const firstRow = container.querySelector('.line-row');
+    const newRow = firstRow.cloneNode(true);
+    newRow.querySelectorAll('input').forEach(i => {
+        if (i.classList.contains('debit-input') || i.classList.contains('credit-input')) i.value = '0.00';
+        else if (i.classList.contains('account-id-input')) i.value = '';
+        else if (i.classList.contains('account-search-input')) { i.value = ''; i.dataset.selected = '0'; i.dataset.selectedValue = ''; i.classList.remove('is-invalid'); }
+        else i.value = '';
+    });
+    container.appendChild(newRow);
+    calcTotals();
+    if (focusNew) {
+        const inp = newRow.querySelector('.account-search-input');
+        if (inp) inp.focus();
+    }
+    return newRow;
+}
+
+function removeRow(btn) {
+    const rows = document.querySelectorAll('.line-row');
+    if (rows.length > 2) { btn.closest('tr').remove(); calcTotals(); }
+    else alert('Una plantilla requiere al menos 2 líneas para cumplir la partida doble.');
+}
+
+function validateLines() {
+    let ok = true;
+    document.querySelectorAll('.line-row').forEach(row => {
+        const hidden = row.querySelector('.account-id-input');
+        const search = row.querySelector('.account-search-input');
+        if (!hidden.value) { search.classList.add('is-invalid'); ok = false; }
+        else search.classList.remove('is-invalid');
+    });
+    if (!ok) { alert('Complete la cuenta contable de todas las líneas.'); return false; }
+    return true;
+}
+
+document.addEventListener('keydown', function (e) {
+    const t = e.target;
+    const cls = t.classList || [];
+    if (cls.contains('account-search-input')) {
+        const picker = t.closest('.account-picker');
+        if (e.key === 'ArrowDown') { e.preventDefault(); const wasOpen = isOpen(picker); renderOptions(picker, t.value); if (wasOpen) moveHighlight(picker, 1); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); moveHighlight(picker, -1); }
+        else if (e.key === 'Enter') { e.preventDefault(); const a = getHighlighted(picker); if (a) selectAccount(picker, a); else focusNextField(t); }
+        else if (e.key === 'Tab') { const a = getHighlighted(picker); if (isOpen(picker) && a) { e.preventDefault(); selectAccount(picker, a); } }
+        else if (e.key === 'Escape') { closeDropdown(picker); t.blur(); }
+        return;
+    }
+    if (cls.contains('line-concept-input') || cls.contains('debit-input') || cls.contains('credit-input')) {
+        if (e.key === 'Enter') { e.preventDefault(); if (cls.contains('credit-input')) addRow(true); else focusNextField(t); }
+        return;
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); addRow(true); }
+});
+
+document.addEventListener('input', function (e) {
+    const t = e.target;
+    const cls = t.classList || [];
+    if (cls.contains('account-search-input')) {
+        const picker = t.closest('.account-picker');
+        const hidden = picker.querySelector('.account-id-input');
+        if (t.value !== (t.dataset.selectedValue || '')) { hidden.value = ''; t.dataset.selected = '0'; }
+        renderOptions(picker, t.value);
+    }
+    if (cls.contains('debit-input') || cls.contains('credit-input')) calcTotals();
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.line-row').forEach(row => {
+        const picker = row.querySelector('.account-picker');
+        let ul = picker.querySelector('.account-dropdown');
+        if (!ul) { ul = document.createElement('ul'); ul.className = 'account-dropdown'; ul.hidden = true; picker.appendChild(ul); }
+    });
+    calcTotals();
+});
+</script>
+{% endblock %}

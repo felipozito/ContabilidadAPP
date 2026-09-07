@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block header_title %}Balance General (Estado de Situación Financiera){% endblock %}
+{% block header_subtitle %}{{ company.name }} | RUC: {{ company.tax_id }}{% endblock %}
+
+{% block content %}
+<div class="table-card">
+    <div class="table-header">
+        <form method="GET" class="report-toolbar">
+            <div>
+                <label class="report-label">Fecha de Corte:</label>
+                <input type="date" name="cutoff_date" class="form-select-sm" value="{{ cutoff_date }}">
+            </div>
+            <button type="submit" class="btn btn-secondary btn-sm">
+                <i class="fa-solid fa-filter"></i> Actualizar
+            </button>
+        </form>
+
+        <div class="report-actions">
+            <a href="?cutoff_date={{ cutoff_date }}&export=pdf" class="btn btn-primary btn-sm">
+                <i class="fa-solid fa-file-pdf"></i> Exportar PDF Membretado
+            </a>
+        </div>
+    </div>
+
+    <div class="report-two-col">
+        <!-- Columna Activos -->
+        <div>
+            <h4 class="report-section-title">
+                1. ACTIVOS
+            </h4>
+            <table class="custom-table">
+                <tbody>
+                    {% for item in data.assets %}
+                        <tr>
+                            <td><code>{{ item.account.code }}</code> {{ item.account.name }}</td>
+                            <td class="text-right">${{ item.balance|floatformat:2 }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="2" class="text-secondary">Sin activos registrados</td></tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="tfoot-total blue">
+                        <td>TOTAL ACTIVOS ($)</td>
+                        <td class="text-right">${{ data.total_assets|floatformat:2 }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <!-- Columna Pasivos y Patrimonio -->
+        <div>
+            <h4 class="report-section-title red">
+                2. PASIVOS
+            </h4>
+            <table class="custom-table report-table-spacer">
+                <tbody>
+                    {% for item in data.liabilities %}
+                        <tr>
+                            <td><code>{{ item.account.code }}</code> {{ item.account.name }}</td>
+                            <td class="text-right">${{ item.balance|floatformat:2 }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="2" class="text-secondary">Sin pasivos registrados</td></tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="tfoot-total red">
+                        <td>TOTAL PASIVOS ($)</td>
+                        <td class="text-right">${{ data.total_liabilities|floatformat:2 }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <h4 class="report-section-title green">
+                3. PATRIMONIO
+            </h4>
+            <table class="custom-table">
+                <tbody>
+                    {% for item in data.equity %}
+                        <tr>
+                            <td><code>{{ item.account.code }}</code> {{ item.account.name }}</td>
+                            <td class="text-right">${{ item.balance|floatformat:2 }}</td>
+                        </tr>
+                    {% endfor %}
+                    <tr>
+                        <td><strong>Ganancia / Pérdida del Periodo</strong></td>
+                        <td class="text-right"><strong>${{ data.current_period_result|floatformat:2 }}</strong></td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr class="tfoot-total green">
+                        <td>TOTAL PASIVO + PATRIMONIO ($)</td>
+                        <td class="text-right">${{ data.total_liabilities_and_equity|floatformat:2 }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    {% if data.is_balanced %}
+        <div class="status-bar success">
+            <i class="fa-solid fa-circle-check"></i> Ecuación Fundamental Cuadrada: Activo (${{ data.total_assets|floatformat:2 }}) = Pasivo + Patrimonio (${{ data.total_liabilities_and_equity|floatformat:2 }})
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

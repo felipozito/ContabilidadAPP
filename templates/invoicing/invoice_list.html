@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block header_title %}Facturación (Ventas y Compras SRI){% endblock %}
+{% block header_subtitle %}Comprobantes emitidos y recibidos con integración contable automática{% endblock %}
+
+{% block content %}
+<div class="table-card">
+    <div class="table-header">
+        <h3><i class="fa-solid fa-file-invoice-dollar text-primary"></i> Registro de Facturas</h3>
+        <a href="{% url 'invoice_create' %}" class="btn btn-primary btn-sm">
+            <i class="fa-solid fa-plus"></i> Emitir / Registrar Factura
+        </a>
+    </div>
+
+    {% if invoices %}
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Nro Factura</th>
+                    <th>Tipo</th>
+                    <th>Cliente / Proveedor</th>
+                    <th>Fecha Emisión</th>
+                    <th>Subtotal</th>
+                    <th>IVA (15%)</th>
+                    <th>Total Factura</th>
+                    <th>Asiento Contable</th>
+                    <th class="text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for inv in invoices %}
+                    <tr>
+                        <td><code>{{ inv.invoice_number }}</code></td>
+                        <td><span class="badge">{{ inv.get_invoice_type_display }}</span></td>
+                        <td><strong>{{ inv.contact.name }}</strong></td>
+                        <td>{{ inv.issue_date }}</td>
+                        <td>${{ inv.subtotal_15|add:inv.subtotal_0|floatformat:2 }}</td>
+                        <td>${{ inv.vat_15|floatformat:2 }}</td>
+                        <td><strong>${{ inv.total|floatformat:2 }}</strong></td>
+                        <td>
+                            {% if inv.journal_entry %}
+                                <span class="text-success font-semibold">
+                                    <i class="fa-solid fa-circle-check"></i> Asiento #{{ inv.journal_entry.entry_number }}
+                                </span>
+                            {% else %}
+                                <span class="text-warning">Pendiente</span>
+                            {% endif %}
+                            {% if inv.status == 'PAID' %}<br><span class="badge">Pagada</span>{% endif %}
+                        </td>
+                        <td class="actions-cell">
+                            {% if inv.status != 'PAID' and inv.status != 'CANCELLED' %}
+                                <a href="{% url 'payment_create' %}?invoice={{ inv.id }}" class="btn btn-success btn-sm" title="Registrar Pago / Cobro">
+                                    <i class="fa-solid fa-money-bill-transfer"></i>
+                                </a>
+                            {% endif %}
+                            <a href="{% url 'invoice_edit' inv.id %}" class="btn btn-info btn-sm" title="Editar">
+                                <i class="fa-solid fa-edit"></i>
+                            </a>
+                            <form method="POST" action="{% url 'invoice_delete' inv.id %}" onsubmit="return confirm('¿Está seguro de que desea eliminar esta factura? También se eliminará el asiento contable asociado.');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger btn-sm" title="Eliminar">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="empty-state">
+            <i class="fa-solid fa-receipt"></i>
+            <h3>No se han registrado facturas</h3>
+            <p>Registra facturas de venta o compra para generar automáticamente los asientos de diario.</p>
+            <a href="{% url 'invoice_create' %}" class="btn btn-primary">
+                <i class="fa-solid fa-plus"></i> Registrar Primera Factura
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block header_title %}Pagos y Cobros{% endblock %}
+{% block header_subtitle %}Cobros de facturas de venta y pagos a proveedores{% endblock %}
+
+{% block content %}
+<div class="table-card">
+    <div class="table-header">
+        <h3><i class="fa-solid fa-money-bill-transfer text-primary"></i> Movimientos de Caja / Banco</h3>
+        <a href="{% url 'payment_create' %}" class="btn btn-primary btn-sm">
+            <i class="fa-solid fa-plus"></i> Registrar Pago / Cobro
+        </a>
+    </div>
+
+    {% if payments %}
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Factura</th>
+                    <th>Tipo</th>
+                    <th>Forma de Pago</th>
+                    <th>Cuenta</th>
+                    <th>Monto ($)</th>
+                    <th>Referencia</th>
+                    <th>Asiento</th>
+                    <th class="text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for payment in payments %}
+                    <tr>
+                        <td>{{ payment.payment_date }}</td>
+                        <td><code>{{ payment.invoice.invoice_number }}</code></td>
+                        <td><span class="badge">{{ payment.invoice.get_invoice_type_display }}</span></td>
+                        <td>{{ payment.get_payment_method_display }}</td>
+                        <td>{{ payment.account.code }} - {{ payment.account.name|truncatechars:25 }}</td>
+                        <td><strong>${{ payment.amount|floatformat:2 }}</strong></td>
+                        <td>{{ payment.reference|default:"-" }}</td>
+                        <td>
+                            {% if payment.journal_entry %}
+                                <span class="text-success font-semibold">
+                                    <i class="fa-solid fa-circle-check"></i> Asiento #{{ payment.journal_entry.entry_number }}
+                                </span>
+                            {% else %}
+                                <span class="text-warning">Pendiente</span>
+                            {% endif %}
+                        </td>
+                        <td class="actions-cell">
+                            <form method="POST" action="{% url 'payment_delete' payment.id %}" onsubmit="return confirm('¿Está seguro de que desea eliminar este pago? También se eliminará su asiento contable.');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger btn-sm" title="Eliminar">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="empty-state">
+            <i class="fa-solid fa-money-bill-wave"></i>
+            <h3>No hay pagos registrados</h3>
+            <p>Registra cobros de facturas de venta o pagos a proveedores.</p>
+            <a href="{% url 'payment_create' %}" class="btn btn-primary">
+                <i class="fa-solid fa-plus"></i> Registrar Primer Pago
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

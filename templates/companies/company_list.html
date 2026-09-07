@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block header_title %}Gestión de Empresas (Multiempresa){% endblock %}
+{% block header_subtitle %}Administración y aislamiento de perfiles de empresa{% endblock %}
+
+{% block content %}
+<div class="table-card">
+    <div class="table-header">
+        <h3><i class="fa-solid fa-building text-primary"></i> Empresas Registradas</h3>
+        <a href="{% url 'company_create' %}" class="btn btn-primary btn-sm">
+            <i class="fa-solid fa-plus"></i> Registrar Nueva Empresa
+        </a>
+    </div>
+
+    {% if companies %}
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>RUC / Identificación</th>
+                    <th>Razón Social</th>
+                    <th>Nombre Comercial</th>
+                    <th>Email</th>
+                    <th>Obligado Contabilidad</th>
+                    <th>Estado</th>
+                    <th class="text-right">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for comp in companies %}
+                    <tr>
+                        <td><code>{{ comp.tax_id }}</code></td>
+                        <td><strong>{{ comp.name }}</strong></td>
+                        <td>{{ comp.trade_name|default:"-" }}</td>
+                        <td>{{ comp.email }}</td>
+                        <td>
+                            {% if comp.is_accounting_required %}
+                                <span class="badge badge-success">Sí</span>
+                            {% else %}
+                                <span class="badge">No</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="status-badge posted">Activa</span>
+                        </td>
+                        <td class="actions-cell">
+                            <a href="{% url 'company_edit' comp.id %}" class="btn btn-secondary btn-sm btn-icon" title="Editar Empresa">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </a>
+                            <form method="POST" action="{% url 'company_delete' comp.id %}" onsubmit="return confirm('¿Está seguro de eliminar o desactivar la empresa {{ comp.name }}?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-secondary btn-sm btn-icon" title="Eliminar Empresa">
+                                    <i class="fa-solid fa-trash text-danger"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="empty-state">
+            <i class="fa-solid fa-city"></i>
+            <h3>No hay empresas registradas</h3>
+            <p>Crea una empresa para comenzar a gestionar el plan de cuentas y asientos contables.</p>
+            <a href="{% url 'company_create' %}" class="btn btn-primary">
+                <i class="fa-solid fa-plus"></i> Crear Primera Empresa
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

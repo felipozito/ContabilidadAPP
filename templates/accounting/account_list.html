@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block header_title %}Plan de Cuentas Contables{% endblock %}
+{% block header_subtitle %}Catálogo jerárquico decimal totalmente editable para {{ company.name }}{% endblock %}
+
+{% block content %}
+<div class="table-card">
+    <div class="table-header">
+        <div>
+            <h3><i class="fa-solid fa-sitemap text-primary"></i> Estructura Jerárquica de Cuentas</h3>
+            <span class="font-xs text-secondary">Puedes editar nombres, añadir subcuentas o eliminar cuentas sin movimientos.</span>
+        </div>
+        <div class="flex gap-sm">
+            {% if not accounts %}
+                <a href="{% url 'seed_accounts_action' %}" class="btn btn-secondary btn-sm">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Cargar Plan Base SRI Ecuador
+                </a>
+            {% endif %}
+            <a href="{% url 'account_create' %}" class="btn btn-primary btn-sm">
+                <i class="fa-solid fa-plus"></i> Nueva Cuenta
+            </a>
+        </div>
+    </div>
+
+    {% if accounts %}
+        <table class="custom-table tree-table">
+            <thead>
+                <tr>
+                    <th class="col-18">Código Decimal</th>
+                    <th class="col-42">Nombre de la Cuenta</th>
+                    <th class="col-15">Naturaleza</th>
+                    <th class="col-13">Tipo</th>
+                    <th class="col-12 text-right">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for acc in accounts %}
+                    <tr class="tree-level-{{ acc.level }}">
+                        <td><code>{{ acc.code }}</code></td>
+                        <td>
+                            {% if acc.kind == 'CONTROL' %}
+                                <strong>{{ acc.name }}</strong>
+                            {% else %}
+                                {{ acc.name }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge badge-gray">{{ acc.get_account_type_display }}</span>
+                        </td>
+                        <td>
+                            {% if acc.kind == 'CONTROL' %}
+                                <span class="text-accent font-semibold">Título / Grupo</span>
+                            {% else %}
+                                <span class="text-success font-semibold">Movimiento</span>
+                            {% endif %}
+                        </td>
+                        <td class="actions-cell">
+                            <a href="{% url 'account_edit' acc.id %}" class="btn btn-secondary btn-sm btn-icon" title="Editar Cuenta">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </a>
+                            <form method="POST" action="{% url 'account_delete' acc.id %}" onsubmit="return confirm('¿Está seguro de eliminar la cuenta {{ acc.code }} - {{ acc.name }}?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-secondary btn-sm btn-icon" title="Eliminar Cuenta">
+                                    <i class="fa-solid fa-trash text-danger"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="empty-state">
+            <i class="fa-solid fa-diagram-project"></i>
+            <h3>No existe un Plan de Cuentas configurado</h3>
+            <p>Puedes autogenerar la estructura base estándar del SRI para Ecuador o agregar tus propias cuentas manualmente.</p>
+            <a href="{% url 'seed_accounts_action' %}" class="btn btn-primary">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Autogenerar Plan de Cuentas SRI Ecuador
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block header_title %}{% if form.instance.pk %}Editar Contacto{% else %}Nuevo Contacto{% endif %}{% endblock %}
+{% block header_subtitle %}{% if form.instance.pk %}Actualizar Información del Contacto{% else %}Registrar Cliente o Proveedor{% endif %}{% endblock %}
+
+{% block content %}
+<div class="form-card">
+    <form method="POST">
+        {% csrf_token %}
+
+        <!-- Errores generales del formulario -->
+        {% if form.non_field_errors %}
+            <div class="alert alert-error">
+                {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="{{ form.contact_type.id_for_label }}">Tipo de Contacto</label>
+                {{ form.contact_type }}
+                {% for error in form.contact_type.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="form-group">
+                <label for="{{ form.id_type.id_for_label }}">Tipo Documento</label>
+                {{ form.id_type }}
+                {% for error in form.id_type.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="{{ form.id_number.id_for_label }}">Número de Documento / RUC (13 dígitos para Ecuador)</label>
+            {{ form.id_number }}
+            {% for error in form.id_number.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+        </div>
+
+        <div class="form-group">
+            <label for="{{ form.name.id_for_label }}">Razón Social o Nombre Completo</label>
+            {{ form.name }}
+            {% for error in form.name.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="{{ form.email.id_for_label }}">Correo Electrónico</label>
+                {{ form.email }}
+                {% for error in form.email.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="form-group">
+                <label for="{{ form.phone.id_for_label }}">Teléfono</label>
+                {{ form.phone }}
+                {% for error in form.phone.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="{{ form.address.id_for_label }}">Dirección Matriz</label>
+            {{ form.address }}
+            {% for error in form.address.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-save"></i> {% if form.instance.pk %}Actualizar{% else %}Guardar{% endif %} Contacto</button>
+            <a href="{% url 'contact_list' %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

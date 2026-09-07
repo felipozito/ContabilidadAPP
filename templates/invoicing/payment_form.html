@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block header_title %}Nuevo Pago / Cobro{% endblock %}
+{% block header_subtitle %}Registrar un pago y generar automáticamente su asiento contable{% endblock %}
+
+{% block content %}
+<div class="form-card">
+    <form method="POST">
+        {% csrf_token %}
+
+        <!-- Errores generales del formulario -->
+        {% if form.non_field_errors %}
+            <div class="alert alert-error">
+                {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="{{ form.invoice.id_for_label }}">Factura Afectada</label>
+                {{ form.invoice }}
+                {% for error in form.invoice.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="form-group">
+                <label for="{{ form.payment_date.id_for_label }}">Fecha de Pago</label>
+                {{ form.payment_date }}
+                {% for error in form.payment_date.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="{{ form.payment_method.id_for_label }}">Forma de Pago</label>
+                {{ form.payment_method }}
+                {% for error in form.payment_method.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="form-group">
+                <label for="{{ form.account.id_for_label }}">Cuenta de Caja / Banco</label>
+                {{ form.account }}
+                {% for error in form.account.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="{{ form.amount.id_for_label }}">Monto Pagado ($)</label>
+                <div class="form-hint" id="invoiceTotalHint">
+                    {% if invoice %}
+                        Total de la factura: <strong>${{ invoice.total|floatformat:2 }}</strong> (precargado; puede cambiarlo si lo desea)
+                    {% else %}
+                        Seleccione una factura para precargar su valor
+                    {% endif %}
+                </div>
+                {{ form.amount }}
+                {% for error in form.amount.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="form-group">
+                <label for="{{ form.reference.id_for_label }}">Nro. Comprobante / Transferencia</label>
+                {{ form.reference }}
+                {% for error in form.reference.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+            </div>
+        </div>
+
+        <div class="form-hint flex gap-sm mb">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>El pago generará automáticamente un asiento contable: Venta (cobro) = Debe Caja/Banco, Haber Cuentas por Cobrar | Compra (pago) = Debe Proveedores, Haber Caja/Banco.</span>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-money-bill-transfer"></i> Registrar Pago</button>
+            <a href="{% url 'payment_list' %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Al cambiar la factura, precargar su valor en el monto del pago
+document.addEventListener('DOMContentLoaded', function () {
+    const invoiceSelect = document.getElementById('id_invoice');
+    const amountInput = document.getElementById('id_amount');
+    const hint = document.getElementById('invoiceTotalHint');
+    const infoUrl = "{% url 'payment_invoice_info' 0 %}".replace('/0/', '/');
+
+    if (!invoiceSelect || !amountInput) return;
+
+    function updateAmountFromInvoice() {
+        const id = invoiceSelect.value;
+        if (!id) return;
+        fetch(infoUrl + id + '/')
+            .then(r => r.json())
+            .then(data => {
+                if (data.total) {
+                    amountInput.value = data.total;
+                    if (hint) hint.innerHTML = 'Total de la factura: <strong>$' + data.total + '</strong> (precargado; puede cambiarlo si lo desea)';
+                }
+            })
+            .catch(() => {});
+    }
+
+    invoiceSelect.addEventListener('change', updateAmountFromInvoice);
+});
+</script>
+{% endblock %}

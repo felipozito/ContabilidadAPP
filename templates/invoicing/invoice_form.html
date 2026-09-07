@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+
+{% block header_title %}{% if form.instance.pk %}Editar Factura{% else %}Registrar Factura{% endif %} (Venta / Compra SRI){% endblock %}
+{% block header_subtitle %}{% if form.instance.pk %}Actualizar información de factura{% else %}La factura generará automáticamente el asiento contable correspondiente{% endif %}{% endblock %}
+
+{% block content %}
+<div class="form-card form-card-wide">
+    <form method="POST">
+        {% csrf_token %}
+
+        <!-- Errores generales del formulario -->
+        {% if form.non_field_errors or formset.non_form_errors %}
+            <div class="alert alert-error">
+                {% for error in form.non_field_errors %}{{ error }}<br>{% endfor %}
+                {% for error in formset.non_form_errors %}{{ error }}<br>{% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- Cabecera de la factura -->
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="{{ form.invoice_type.id_for_label }}">Tipo de Factura</label>
+                {{ form.invoice_type }}
+                {% for error in form.invoice_type.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.contact.id_for_label }}">Cliente / Proveedor</label>
+                {{ form.contact }}
+                {% for error in form.contact.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+            </div>
+        </div>
+
+        <div class="form-grid-3">
+            <div class="form-group">
+                <label for="{{ form.invoice_number.id_for_label }}">Número de Factura (Formato SRI 001-001-000000001)</label>
+                {{ form.invoice_number }}
+                {% for error in form.invoice_number.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="form-group">
+                <label for="{{ form.issue_date.id_for_label }}">Fecha de Emisión</label>
+                {{ form.issue_date }}
+                {% for error in form.issue_date.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="form-group">
+                <label for="{{ form.due_date.id_for_label }}">Fecha de Vencimiento</label>
+                {{ form.due_date }}
+                {% for error in form.due_date.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+            </div>
+        </div>
+
+        <hr class="divider">
+
+        <!-- Líneas de detalle (productos / servicios) -->
+        <div class="flex-between mb-sm">
+            <h4 class="mb-xs"><i class="fa-solid fa-cubes"></i> Detalle de la Factura (Líneas)</h4>
+        </div>
+
+        {{ formset.management_form }}
+
+        <table class="custom-table" id="itemsTable">
+            <thead>
+                <tr>
+                    <th class="col-45">Descripción</th>
+                    <th class="col-10">Cantidad</th>
+                    <th class="col-15">Precio Unitario ($)</th>
+                    <th class="col-15">IVA</th>
+                    <th class="col-5"></th>
+                </tr>
+            </thead>
+            <tbody id="itemsContainer">
+                {% for item_form in formset %}
+                    <tr class="invoice-item-row">
+                        <td>
+                            {{ item_form.id }}{{ item_form.description }}
+                            {% for error in item_form.description.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+                        </td>
+                        <td>{{ item_form.quantity }}
+                            {% for error in item_form.quantity.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+                        </td>
+                        <td>{{ item_form.unit_price }}
+                            {% for error in item_form.unit_price.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+                        </td>
+                        <td>{{ item_form.vat_rate }}
+                            {% for error in item_form.vat_rate.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+                        </td>
+                        <td>
+                            <label class="delete-label" title="Eliminar línea">{{ item_form.DELETE }} <i class="fa-solid fa-trash text-danger"></i></label>
+                        </td>
+                    </tr>
+                {% endfor %}
+
+                <!-- Plantilla oculta para agregar líneas con JavaScript -->
+                <tr id="emptyItemRow" class="invoice-item-row" style="display:none;">
+                    <td>{{ formset.empty_form.id }}{{ formset.empty_form.description }}</td>
+                    <td>{{ formset.empty_form.quantity }}</td>
+                    <td>{{ formset.empty_form.unit_price }}</td>
+                    <td>{{ formset.empty_form.vat_rate }}</td>
+                    <td>
+                        <label class="delete-label">{{ formset.empty_form.DELETE }} <i class="fa-solid fa-trash text-danger"></i></label>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="mt">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="addItemRow()">
+                <i class="fa-solid fa-plus"></i> Agregar Línea
+            </button>
+        </div>
+
+        <!-- Totales calculados en vivo -->
+        <div class="invoice-totals">
+            <div class="total-box">
+                <span class="total-box-title">Subtotal IVA 15%:</span>
+                <span class="total-box-value" id="subtotal15Text">$0.00</span>
+            </div>
+            <div class="total-box">
+                <span class="total-box-title">Subtotal IVA 0%:</span>
+                <span class="total-box-value" id="subtotal0Text">$0.00</span>
+            </div>
+            <div class="total-box">
+                <span class="total-box-title">IVA 15%:</span>
+                <span class="total-box-value" id="vatText">$0.00</span>
+            </div>
+            <div class="total-box total-box-main">
+                <span class="total-box-title">Total Factura:</span>
+                <span class="total-box-value" id="totalText">$0.00</span>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-file-invoice"></i> {% if form.instance.pk %}Actualizar y Contabilizar{% else %}Guardar y Contabilizar{% endif %}</button>
+            <a href="{% url 'invoice_list' %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// --- Buscar el checkbox "eliminar" de una fila (por clase o por nombre) ---
+function getDeleteCheckbox(row) {
+    return row.querySelector('.delete-checkbox') || row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+}
+
+// --- Cálculo de totales en vivo desde las líneas de detalle ---
+function calcTotals() {
+    let s15 = 0;
+    let s0 = 0;
+
+    document.querySelectorAll('.invoice-item-row').forEach(row => {
+        if (row.id === 'emptyItemRow') return; // ignorar la plantilla oculta
+        const delCb = getDeleteCheckbox(row);
+        if (delCb && delCb.checked) return;
+
+        const qty = parseFloat(row.querySelector('.qty-input').value || 0);
+        const price = parseFloat(row.querySelector('.price-input').value || 0);
+        const rate = row.querySelector('.vat-input').value;
+
+        const lineSubtotal = qty * price;
+        if (rate === '15.00') s15 += lineSubtotal;
+        else s0 += lineSubtotal;
+    });
+
+    const vat = s15 * 0.15;
+    const total = s15 + s0 + vat;
+
+    document.getElementById('subtotal15Text').innerText = '$' + s15.toFixed(2);
+    document.getElementById('subtotal0Text').innerText = '$' + s0.toFixed(2);
+    document.getElementById('vatText').innerText = '$' + vat.toFixed(2);
+    document.getElementById('totalText').innerText = '$' + total.toFixed(2);
+}
+
+// --- Agregar una nueva línea de detalle ---
+function addItemRow() {
+    const container = document.getElementById('itemsContainer');
+    const template = document.getElementById('emptyItemRow');
+
+    // Índice de la nueva fila
+    const index = container.querySelectorAll('.invoice-item-row:not(#emptyItemRow)').length;
+
+    // Clonar la plantilla y renombrar los campos con el índice correcto
+    const row = template.cloneNode(true);
+    row.id = '';
+    row.style.display = '';
+    row.querySelectorAll('input, select').forEach(el => {
+        const name = el.getAttribute('name');
+        const id = el.getAttribute('id');
+        if (name && name.includes('__prefix__')) {
+            el.setAttribute('name', name.replace('__prefix__', index));
+        }
+        if (id && id.includes('__prefix__')) {
+            el.setAttribute('id', id.replace('__prefix__', index));
+        }
+        // Limpiar el valor de los campos editables (mantener ocultos y selects)
+        if (el.type !== 'hidden' && el.type !== 'checkbox') {
+            if (el.tagName === 'SELECT') el.selectedIndex = 0;
+            else el.value = '';
+        }
+    });
+
+    container.insertBefore(row, template);
+
+    // Avisar a Django de que hay una fila más
+    const total = document.getElementById('id_items-TOTAL_FORMS');
+    total.value = parseInt(total.value, 10) + 1;
+
+    calcTotals();
+}
+
+// Recalcular cada vez que cambia un campo de cantidad, precio o IVA
+document.addEventListener('input', function (e) {
+    const t = e.target;
+    if (t.classList && (t.classList.contains('qty-input') || t.classList.contains('price-input') || t.classList.contains('vat-input'))) {
+        calcTotals();
+    }
+});
+
+// --- Marcar/desmarcar una línea para eliminar (con confirmación visual) ---
+function toggleRowDelete(checkbox) {
+    const row = checkbox.closest('tr.invoice-item-row');
+    if (!row || row.id === 'emptyItemRow') return;
+
+    if (checkbox.checked) {
+        // Evitar eliminar la última línea restante (se exige al menos 1 detalle)
+        const activeRows = Array.from(document.querySelectorAll('.invoice-item-row:not(#emptyItemRow)'))
+            .filter(r => { const cb = getDeleteCheckbox(r); return !(cb && cb.checked); });
+        if (activeRows.length <= 0) {
+            alert('La factura debe incluir al menos una línea de detalle.');
+            checkbox.checked = false;
+            return;
+        }
+        // Animación de salida: la fila desaparece (queda oculta, el checkbox
+        // marcado se envía a Django para eliminar la línea al guardar)
+        row.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+        row.style.opacity = '0';
+        row.style.transform = 'translateX(30px)';
+        setTimeout(() => { row.style.display = 'none'; }, 260);
+    } else {
+        row.style.transition = '';
+        row.style.opacity = '';
+        row.style.transform = '';
+        row.style.display = '';
+    }
+    calcTotals();
+}
+
+document.addEventListener('change', function (e) {
+    const t = e.target;
+    if (t.type === 'checkbox' && t.name && t.name.endsWith('-DELETE')) toggleRowDelete(t);
+});
+
+document.addEventListener('DOMContentLoaded', calcTotals);
+</script>
+{% endblock %}

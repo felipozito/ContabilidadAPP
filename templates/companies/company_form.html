@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block header_title %}{% if company_item %}Editar Empresa {{ company_item.name }}{% else %}Registrar Nueva Empresa{% endif %}{% endblock %}
+{% block header_subtitle %}{% if company_item %}Modificar perfil fiscal y tributario de la empresa{% else %}Configurar perfil fiscal y tributario (Ecuador SRI){% endif %}{% endblock %}
+
+
+{% block content %}
+<div class="form-card">
+    <form method="POST">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="name">Razón Social</label>
+            <input type="text" id="name" name="name" class="form-control" placeholder="Corporación Ecuatoriana S.A." value="{{ company_item.name|default:'' }}" required>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="trade_name">Nombre Comercial</label>
+                <input type="text" id="trade_name" name="trade_name" class="form-control" placeholder="CorpoEC" value="{{ company_item.trade_name|default:'' }}">
+            </div>
+            <div class="form-group">
+                <label for="tax_id">RUC (13 dígitos para Ecuador)</label>
+                <input type="text" id="tax_id" name="tax_id" class="form-control" placeholder="1790011674001" value="{{ company_item.tax_id|default:'' }}" required>
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="email">Correo Electrónico de la Empresa</label>
+                <input type="email" id="email" name="email" class="form-control" placeholder="contabilidad@empresa.ec" value="{{ company_item.email|default:'' }}" required>
+            </div>
+            <div class="form-group">
+                <label for="phone">Teléfono</label>
+                <input type="text" id="phone" name="phone" class="form-control" placeholder="022345678" value="{{ company_item.phone|default:'' }}">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="address">Dirección Matriz</label>
+            <textarea id="address" name="address" class="form-control" rows="2" placeholder="Av. Amazonas y Eloy Alfaro, Quito, Ecuador" required>{{ company_item.address|default:'' }}</textarea>
+        </div>
+
+        {% if not company_item %}
+        <div class="form-check-card">
+            <label class="form-check-label">
+                <input type="checkbox" name="seed_accounts" checked>
+                Cargar automáticamente el Plan de Cuentas Estándar SRI Ecuador (Recomendado)
+            </label>
+        </div>
+        {% endif %}
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                <i class="fa-solid fa-building-circle-check"></i> {% if company_item %}Guardar Cambios{% else %}Crear Empresa{% endif %}
+            </button>
+            <a href="{% url 'company_list' %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

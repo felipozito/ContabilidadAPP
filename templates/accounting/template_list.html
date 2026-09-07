@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block header_title %}Plantillas de Asientos Recurrentes{% endblock %}
+{% block header_subtitle %}Reutiliza asientos que se repiten cada mes (alícuotas, arriendos, servicios){% endblock %}
+
+{% block content %}
+<div class="table-card">
+    <div class="table-header">
+        <div>
+            <h3><i class="fa-solid fa-layer-group text-primary"></i> Plantillas Guardadas - {{ company.name }}</h3>
+        </div>
+        <div class="report-actions">
+            <a href="{% url 'template_create' %}" class="btn btn-primary btn-sm">
+                <i class="fa-solid fa-plus"></i> Nueva Plantilla
+            </a>
+            <a href="{% url 'journal_entry_list' %}" class="btn btn-secondary btn-sm">
+                <i class="fa-solid fa-arrow-left"></i> Volver al Libro Diario
+            </a>
+        </div>
+    </div>
+
+    {% if templates %}
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Tipo</th>
+                    <th>Concepto</th>
+                    <th class="text-right">Debe ($)</th>
+                    <th class="text-right">Haber ($)</th>
+                    <th class="text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in templates %}
+                    <tr>
+                        <td><strong><i class="fa-solid fa-clone text-primary"></i> {{ t.name }}</strong></td>
+                        <td><span class="badge">{{ t.get_entry_type_display }}</span></td>
+                        <td title="{{ t.concept }}">{{ t.concept|truncatechars:50 }}</td>
+                        <td class="text-right">${{ t.total_debit|floatformat:2 }}</td>
+                        <td class="text-right">${{ t.total_credit|floatformat:2 }}</td>
+                        <td class="actions-cell">
+                            <a href="{% url 'template_use' t.id %}" class="btn btn-success btn-sm" title="Usar esta plantilla para crear un nuevo asiento">
+                                <i class="fa-solid fa-circle-plus"></i> Usar
+                            </a>
+                            <a href="{% url 'template_edit' t.id %}" class="btn btn-info btn-sm" title="Editar plantilla">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </a>
+                            <form method="POST" action="{% url 'template_delete' t.id %}" onsubmit="return confirm('¿Eliminar la plantilla \'{{ t.name }}\'?');" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger btn-sm" title="Eliminar plantilla">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="empty-state">
+            <i class="fa-solid fa-layer-group"></i>
+            <h3>No tienes plantillas guardadas</h3>
+            <p>Guarda como plantilla un asiento que repitas cada mes y reutilízalo en segundos.</p>
+            <a href="{% url 'journal_entry_list' %}" class="btn btn-primary">
+                <i class="fa-solid fa-arrow-left"></i> Ir al Libro Diario
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

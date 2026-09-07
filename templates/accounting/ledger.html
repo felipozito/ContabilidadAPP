@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block header_title %}Libro Mayor{% endblock %}
+{% block header_subtitle %}Detalle de movimientos y saldos por cuenta contable{% endblock %}
+
+{% block content %}
+<div class="table-card">
+    <div class="table-header">
+        <div>
+            <h3><i class="fa-solid fa-book-open-reader text-primary"></i> Libro Mayor - {{ company.name }}</h3>
+        </div>
+    </div>
+
+    <div class="table-header">
+        <form method="GET" class="report-toolbar">
+            <div>
+                <label class="report-label">Desde:</label>
+                <input type="date" name="start_date" class="form-select-sm" value="{{ start_date }}">
+            </div>
+            <div>
+                <label class="report-label">Hasta:</label>
+                <input type="date" name="end_date" class="form-select-sm" value="{{ end_date }}">
+            </div>
+            <button type="submit" class="btn btn-secondary btn-sm">
+                <i class="fa-solid fa-filter"></i> Filtrar
+            </button>
+        </form>
+
+        <div class="report-actions">
+            <a href="?start_date={{ start_date }}&end_date={{ end_date }}&export=excel" class="btn btn-success btn-sm" title="Exportar a Excel">
+                <i class="fa-solid fa-file-excel"></i> Excel
+            </a>
+            <a href="?start_date={{ start_date }}&end_date={{ end_date }}&export=pdf" class="btn btn-danger btn-sm" title="Exportar a PDF">
+                <i class="fa-solid fa-file-pdf"></i> PDF
+            </a>
+        </div>
+    </div>
+
+    {% if data.accounts %}
+        <div class="ledger-totals-bar">
+            <span><strong>Total Debe:</strong> ${{ data.total_debit|floatformat:2 }}</span>
+            <span><strong>Total Haber:</strong> ${{ data.total_credit|floatformat:2 }}</span>
+        </div>
+
+        {% for item in data.accounts %}
+            <details class="ledger-block" {% if forloop.first %}open{% endif %}>
+                <summary>
+                    <div class="ledger-summary">
+                        <span class="ledger-acc"><code>{{ item.account.code }}</code> {{ item.account.name }}</span>
+                        <span class="ledger-summary-figures">
+                            <span class="ledger-figure">Saldo inicial: <strong>${{ item.opening_balance|floatformat:2 }}</strong></span>
+                            <span class="ledger-figure">Movs: <strong>{{ item.movements|length }}</strong></span>
+                            <span class="ledger-figure">Saldo final: <strong>${{ item.closing_balance|floatformat:2 }}</strong></span>
+                        </span>
+                    </div>
+                </summary>
+                <table class="custom-table ledger-table">
+                    <thead>
+                        <tr>
+                            <th class="col-12">Fecha</th>
+                            <th>Detalle</th>
+                            <th class="col-16">Referencia</th>
+                            <th class="col-13 text-right">Debe ($)</th>
+                            <th class="col-13 text-right">Haber ($)</th>
+                            <th class="col-13 text-right">Saldo ($)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="ledger-opening">
+                            <td colspan="3">Saldo Inicial</td>
+                            <td class="text-right">-</td>
+                            <td class="text-right">-</td>
+                            <td class="text-right"><strong>${{ item.opening_balance|floatformat:2 }}</strong></td>
+                        </tr>
+                        {% for mov in item.movements %}
+                            <tr>
+                                <td>{{ mov.date|date:"d/m/Y" }}</td>
+                                <td>
+                                    <span class="ledger-entry-ref">#{{ mov.entry_number }}</span>
+                                    {{ mov.concept }}
+                                    {% if mov.line_concept %}<br><small class="text-secondary">{{ mov.line_concept }}</small>{% endif %}
+                                </td>
+                                <td><code>{{ mov.reference|default:"-" }}</code></td>
+                                <td class="text-right">{% if mov.debit > 0 %}${{ mov.debit|floatformat:2 }}{% else %}-{% endif %}</td>
+                                <td class="text-right">{% if mov.credit > 0 %}${{ mov.credit|floatformat:2 }}{% else %}-{% endif %}</td>
+                                <td class="text-right">${{ mov.balance|floatformat:2 }}</td>
+                            </tr>
+                        {% endfor %}
+                        <tr class="ledger-totals">
+                            <td colspan="3">SUMAS DEL PERIODO</td>
+                            <td class="text-right">${{ item.total_debit|floatformat:2 }}</td>
+                            <td class="text-right">${{ item.total_credit|floatformat:2 }}</td>
+                            <td class="text-right"><strong>${{ item.closing_balance|floatformat:2 }}</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </details>
+        {% endfor %}
+    {% else %}
+        <div class="empty-state">
+            <i class="fa-solid fa-book-open-reader"></i>
+            <h3>No hay movimientos en el periodo seleccionado</h3>
+            <p>Registra asientos contables o ajusta el rango de fechas para ver el Libro Mayor.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        @page { size: A4; margin: 0.4cm; }
+        body { font-family: Helvetica, Arial, sans-serif; font-size: 8pt; color: #000; margin: 0; padding: 0; }
+        .header { text-align: center; border-bottom: 1px solid #000; padding-bottom: 3px; margin-bottom: 6px; }
+        .company-name { font-size: 11pt; font-weight: bold; }
+        .title { font-size: 9pt; font-weight: bold; margin-top: 2px; }
+        .info { font-size: 7pt; margin-top: 1px; }
+        h3 { font-size: 8pt; margin: 6px 0 2px 0; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 4px; }
+        th { border-bottom: 1px solid #000; padding: 1px 3px; text-align: left; font-size: 7pt; }
+        td { border-bottom: 1px solid #ccc; padding: 1px 3px; }
+        .total-row { font-weight: bold; }
+        .result { border: 1px solid #000; padding: 4px; font-weight: bold; font-size: 9pt; text-align: center; margin-top: 6px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="company-name">{{ company.name }}</div>
+        <div class="title">ESTADO DE RESULTADOS</div>
+        <div class="info">RUC: {{ company.tax_id }} | Periodo: {{ data.start_date }} al {{ data.end_date }}</div>
+    </div>
+
+    <h3>INGRESOS</h3>
+    <table>
+        <thead>
+            <tr><th>Codigo</th><th>Cuenta</th><th style="text-align: right;">Monto</th></tr>
+        </thead>
+        <tbody>
+            {% for item in data.incomes %}
+                <tr><td>{{ item.account.code }}</td><td>{{ item.account.name }}</td><td style="text-align: right;">{{ item.balance|floatformat:2 }}</td></tr>
+            {% endfor %}
+            <tr class="total-row">
+                <td colspan="2">TOTAL INGRESOS</td>
+                <td style="text-align: right;">{{ data.total_income|floatformat:2 }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>GASTOS Y COSTOS</h3>
+    <table>
+        <thead>
+            <tr><th>Codigo</th><th>Cuenta</th><th style="text-align: right;">Monto</th></tr>
+        </thead>
+        <tbody>
+            {% for item in data.expenses %}
+                <tr><td>{{ item.account.code }}</td><td>{{ item.account.name }}</td><td style="text-align: right;">{{ item.balance|floatformat:2 }}</td></tr>
+            {% endfor %}
+            <tr class="total-row">
+                <td colspan="2">TOTAL GASTOS</td>
+                <td style="text-align: right;">{{ data.total_expense|floatformat:2 }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="result">
+        UTILIDAD / PERDIDA NETA: {{ data.net_profit|floatformat:2 }}
+    </div>
+</body>
+</html>

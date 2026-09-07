@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Software Contable{% endblock %}</title>
+    <!-- Recursos locales (fuentes e iconos) - funcionan sin internet -->
+    <link rel="stylesheet" href="/static/vendor/fonts/fonts.css">
+    <link rel="stylesheet" href="/static/vendor/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/style.css?v=17">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-box">
+                    <i class="fa-solid fa-calculator text-primary"></i>
+                </div>
+                <div class="logo-text">
+                    <span class="brand-title">ContableEC</span>
+                    <span class="brand-subtitle">SRI & Multiempresa</span>
+                </div>
+                <button type="button" id="sidebarToggle" class="sidebar-toggle" title="Minimizar menú">
+                    <i class="fa-solid fa-angles-left"></i>
+                </button>
+            </div>
+
+            <!-- Active Company Card -->
+            <div class="active-company-card">
+                {% if request.company %}
+                    <div class="company-badge">
+                        <i class="fa-solid fa-building text-accent"></i>
+                        <div class="company-info">
+                            <span class="company-name" title="{{ request.company.name }}">{{ request.company.name }}</span>
+                            <span class="company-taxid">RUC: {{ request.company.tax_id }}</span>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="company-badge alert-badge">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span>Sin Empresa Seleccionada</span>
+                    </div>
+                {% endif %}
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section-label">PRINCIPAL</div>
+                <a href="{% url 'dashboard' %}" title="Dashboard" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span>Dashboard</span>
+                </a>
+
+                <div class="nav-section-label">CONTABILIDAD</div>
+                <a href="{% url 'account_list' %}" title="Plan de Cuentas" class="nav-link {% if 'account' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fa-solid fa-sitemap"></i>
+                    <span>Plan de Cuentas</span>
+                </a>
+                <a href="{% url 'journal_entry_list' %}" title="Libro Diario" class="nav-link {% if 'journal' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fa-solid fa-book-journal-whills"></i>
+                    <span>Libro Diario</span>
+                </a>
+                <a href="{% url 'ledger' %}" title="Libro Mayor" class="nav-link {% if 'ledger' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fa-solid fa-book-open-reader"></i>
+                    <span>Libro Mayor</span>
+                </a>
+                <a href="{% url 'template_list' %}" title="Plantillas de Asientos Recurrentes" class="nav-link {% if 'template' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fa-solid fa-layer-group"></i>
+                    <span>Plantillas Recurrentes</span>
+                </a>
+
+                <div class="nav-section-label">GESTIÓN COMERCIAL</div>
+                <a href="{% url 'contact_list' %}" title="Clientes y Proveedores" class="nav-link {% if 'contact' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fa-solid fa-address-book"></i>
+                    <span>Clientes y Proveedores</span>
+                </a>
+                <a href="{% url 'invoice_list' %}" title="Facturación (SRI)" class="nav-link {% if 'invoice' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fa-solid fa-file-invoice-dollar"></i>
+                    <span>Facturación (SRI)</span>
+                </a>
+                <a href="{% url 'payment_list' %}" title="Pagos y Cobros" class="nav-link {% if 'payment' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fa-solid fa-money-bill-transfer"></i>
+                    <span>Pagos y Cobros</span>
+                </a>
+
+                <div class="nav-section-label">REPORTES FISCALES</div>
+                <a href="{% url 'reports_home' %}" title="Reportes Financieros" class="nav-link {% if 'reports' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fa-solid fa-file-pdf"></i>
+                    <span>Reportes Financieros</span>
+                </a>
+
+                <div class="nav-section-label">CONFIGURACIÓN</div>
+                <a href="{% url 'company_list' %}" title="Gestión Empresas" class="nav-link {% if 'company' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fa-solid fa-city"></i>
+                    <span>Gestión Empresas</span>
+                </a>
+                {% if request.user.is_staff or request.user.is_superuser %}
+                <a href="/admin/" title="Django Admin" class="nav-link warning-link" target="_blank">
+                    <i class="fa-solid fa-sliders"></i>
+                    <span>Django Admin</span>
+                </a>
+                {% endif %}
+            </nav>
+
+
+            <div class="sidebar-footer">
+                <div class="user-pill">
+                    <i class="fa-solid fa-user-circle user-icon"></i>
+                    <div class="user-info">
+                        <span class="user-name">{{ request.user.username|default:"admin" }}</span>
+                        <span class="user-role">{% if request.user.is_superuser %}Administrador{% else %}Contador{% endif %}</span>
+                    </div>
+                </div>
+                <a href="{% url 'logout' %}" class="btn btn-secondary btn-sm btn-logout" title="Cerrar Sesión">
+                    <i class="fa-solid fa-right-from-bracket text-danger"></i> <span>Salir</span>
+                </a>
+            </div>
+
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-wrapper">
+            <!-- Topbar Header -->
+            <header class="topbar">
+                <div class="topbar-left">
+                    <div class="topbar-title">
+                        <h1>{% block header_title %}Tablero Contable{% endblock %}</h1>
+                        <p class="topbar-subtitle">{% block header_subtitle %}Gestión financiera y fiscal para Ecuador{% endblock %}</p>
+                    </div>
+                </div>
+
+                <div class="topbar-actions">
+                    {% if all_companies %}
+                        <form method="POST" action="{% url 'switch_company' %}" class="company-switch-form">
+                            {% csrf_token %}
+                            <label for="company_id_select" class="sr-only">Empresa</label>
+                            <select name="company_id" id="company_id_select" onchange="this.form.submit()" class="form-select-sm form-select-accent">
+                                {% for comp in all_companies %}
+                                    <option value="{{ comp.id }}" {% if request.company.id == comp.id %}selected{% endif %}>
+                                        🏢 {{ comp.name }} ({{ comp.tax_id }})
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </form>
+                    {% endif %}
+                    
+                    <a href="{% url 'journal_entry_create' %}" class="btn btn-primary btn-sm">
+                        <i class="fa-solid fa-plus"></i> Nuevo Asiento
+                    </a>
+                </div>
+
+            </header>
+
+            <!-- Alerts / Messages -->
+            {% if messages %}
+                <div class="messages-container">
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }}">
+                            <i class="fa-solid fa-circle-info"></i>
+                            <span>{{ message }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- Dynamic Body Content -->
+            <div class="content-body">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const layout = document.querySelector('.app-layout');
+        const btn = document.getElementById('sidebarToggle');
+        if (!layout || !btn) return;
+
+        function updateToggleIcon() {
+            const icon = btn.querySelector('i');
+            const collapsed = layout.classList.contains('collapsed');
+            icon.className = collapsed ? 'fa-solid fa-angles-right' : 'fa-solid fa-angles-left';
+            btn.title = collapsed ? 'Ampliar menú' : 'Minimizar menú';
+        }
+
+        if (localStorage.getItem('sidebar_collapsed') === '1') layout.classList.add('collapsed');
+        updateToggleIcon();
+        btn.addEventListener('click', function () {
+            layout.classList.toggle('collapsed');
+            localStorage.setItem('sidebar_collapsed', layout.classList.contains('collapsed') ? '1' : '0');
+            updateToggleIcon();
+        });
+    });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block header_title %}Directorio de Contactos{% endblock %}
+{% block header_subtitle %}Gestión de Clientes y Proveedores de {{ company.name }}{% endblock %}
+
+{% block content %}
+<div class="table-card">
+    <div class="table-header">
+        <h3><i class="fa-solid fa-address-book text-primary"></i> Clientes y Proveedores Registrados</h3>
+        <a href="{% url 'contact_create' %}" class="btn btn-primary btn-sm">
+            <i class="fa-solid fa-plus"></i> Nuevo Contacto
+        </a>
+    </div>
+
+    {% if contacts %}
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Identificación</th>
+                    <th>Razón Social / Nombre</th>
+                    <th>Tipo Contacto</th>
+                    <th>Email</th>
+                    <th>Teléfono</th>
+                    <th>Dirección</th>
+                    <th class="text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for contact in contacts %}
+                    <tr>
+                        <td><code>{{ contact.id_number }}</code> ({{ contact.get_id_type_display }})</td>
+                        <td><strong>{{ contact.name }}</strong></td>
+                        <td><span class="badge">{{ contact.get_contact_type_display }}</span></td>
+                        <td>{{ contact.email|default:"-" }}</td>
+                        <td>{{ contact.phone|default:"-" }}</td>
+                        <td>{{ contact.address|default:"-"|truncatechars:40 }}</td>
+                        <td class="actions-cell">
+                            <a href="{% url 'contact_edit' contact.id %}" class="btn btn-info btn-sm" title="Editar">
+                                <i class="fa-solid fa-edit"></i>
+                            </a>
+                            <form method="POST" action="{% url 'contact_delete' contact.id %}" onsubmit="return confirm('¿Está seguro de que desea eliminar este contacto?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger btn-sm" title="Eliminar">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="empty-state">
+            <i class="fa-solid fa-users"></i>
+            <h3>No hay contactos registrados</h3>
+            <p>Registra tus clientes y proveedores para generar facturas e ingresos.</p>
+            <a href="{% url 'contact_create' %}" class="btn btn-primary">
+                <i class="fa-solid fa-plus"></i> Crear Primer Contacto
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

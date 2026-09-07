@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block header_title %}Centro de Reportes Financieros y Fiscales{% endblock %}
+{% block header_subtitle %}Estados financieros clave e informes para el SRI y auditorías{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <!-- Card 1: Balance de Comprobación -->
+    <div class="table-card report-card">
+        <div>
+            <div class="report-card-icon blue">
+                <i class="fa-solid fa-list-check"></i>
+            </div>
+            <h3>Balance de Comprobación</h3>
+            <p>Sumas y saldos de todas las cuentas contables para verificar que la contabilidad esté cuadrada.</p>
+        </div>
+        <a href="{% url 'trial_balance' %}" class="btn btn-primary btn-sm">
+            <i class="fa-solid fa-eye"></i> Generar Reporte
+        </a>
+    </div>
+
+    <!-- Card 2: Balance General -->
+    <div class="table-card report-card">
+        <div>
+            <div class="report-card-icon green">
+                <i class="fa-solid fa-scale-balanced"></i>
+            </div>
+            <h3>Balance General</h3>
+            <p>Estado de Situación Financiera ($Activo = Pasivo + Patrimonio$) a una fecha determinada.</p>
+        </div>
+        <a href="{% url 'balance_sheet' %}" class="btn btn-primary btn-sm">
+            <i class="fa-solid fa-eye"></i> Generar Reporte
+        </a>
+    </div>
+
+    <!-- Card 3: Estado de Resultados -->
+    <div class="table-card report-card">
+        <div>
+            <div class="report-card-icon amber">
+                <i class="fa-solid fa-chart-line"></i>
+            </div>
+            <h3>Estado de Resultados</h3>
+            <p>Estado de Pérdidas y Ganancias ($Ingresos - Gastos$) para conocer la utilidad neta del periodo.</p>
+        </div>
+        <a href="{% url 'income_statement' %}" class="btn btn-primary btn-sm">
+            <i class="fa-solid fa-eye"></i> Generar Reporte
+        </a>
+    </div>
+</div>
+{% endblock %}

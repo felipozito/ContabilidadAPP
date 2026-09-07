@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block header_title %}Estado de Resultados (Pérdidas y Ganancias){% endblock %}
+{% block header_subtitle %}{{ company.name }} | RUC: {{ company.tax_id }}{% endblock %}
+
+{% block content %}
+<div class="table-card">
+    <div class="table-header">
+        <form method="GET" class="report-toolbar">
+            <div>
+                <label class="report-label">Desde:</label>
+                <input type="date" name="start_date" class="form-select-sm" value="{{ start_date }}">
+            </div>
+            <div>
+                <label class="report-label">Hasta:</label>
+                <input type="date" name="end_date" class="form-select-sm" value="{{ end_date }}">
+            </div>
+            <button type="submit" class="btn btn-secondary btn-sm">
+                <i class="fa-solid fa-filter"></i> Filtrar
+            </button>
+        </form>
+
+        <div class="report-actions">
+            <a href="?start_date={{ start_date }}&end_date={{ end_date }}&export=pdf" class="btn btn-primary btn-sm">
+                <i class="fa-solid fa-file-pdf"></i> Exportar PDF Membretado
+            </a>
+        </div>
+    </div>
+
+    <div class="report-col">
+        <h4 class="report-section-title green">
+            1. INGRESOS OPERACIONALES
+        </h4>
+        <table class="custom-table report-table-spacer">
+            <tbody>
+                {% for item in data.incomes %}
+                    <tr>
+                        <td><code>{{ item.account.code }}</code> {{ item.account.name }}</td>
+                        <td class="text-right">${{ item.balance|floatformat:2 }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="2" class="text-secondary">Sin ingresos registrados en el periodo</td></tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="tfoot-total green">
+                    <td>TOTAL INGRESOS ($)</td>
+                    <td class="text-right">${{ data.total_income|floatformat:2 }}</td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <h4 class="report-section-title red">
+            2. GASTOS Y COSTOS OPERACIONALES
+        </h4>
+        <table class="custom-table report-table-spacer">
+            <tbody>
+                {% for item in data.expenses %}
+                    <tr>
+                        <td><code>{{ item.account.code }}</code> {{ item.account.name }}</td>
+                        <td class="text-right">${{ item.balance|floatformat:2 }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="2" class="text-secondary">Sin gastos registrados en el periodo</td></tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="tfoot-total red">
+                    <td>TOTAL GASTOS ($)</td>
+                    <td class="text-right">${{ data.total_expense|floatformat:2 }}</td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <div class="summary-box">
+            <span class="summary-box-title">UTILIDAD / PÉRDIDA NETA DEL EJERCICIO:</span>
+            <span class="summary-box-value {% if data.net_profit >= 0 %}text-success{% else %}text-danger{% endif %}">
+                ${{ data.net_profit|floatformat:2 }}
+            </span>
+        </div>
+    </div>
+</div>
+{% endblock %}

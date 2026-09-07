@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+
+{% block header_title %}Libro Diario (Asientos Contables){% endblock %}
+{% block header_subtitle %}Registro de transacciones bajo el principio de Partida Doble{% endblock %}
+
+{% block content %}
+<div class="table-card">
+    <div class="table-header">
+        <div>
+            <h3><i class="fa-solid fa-book-journal-whills text-primary"></i> Comprobantes Contables - {{ company.name }}</h3>
+        </div>
+    </div>
+    <div class="table-header">
+        <form method="GET" class="report-toolbar">
+            <div>
+                <label class="report-label">Desde:</label>
+                <input type="date" name="start_date" class="form-select-sm" value="{{ start_date }}">
+            </div>
+            <div>
+                <label class="report-label">Hasta:</label>
+                <input type="date" name="end_date" class="form-select-sm" value="{{ end_date }}">
+            </div>
+            <div class="journal-account-filter">
+                <label class="report-label">Cuenta(s):</label>
+                <div class="account-filter-picker" id="accountFilterPicker">
+                    <div class="account-filter-bar">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="search" id="accountFilterSearch" class="account-filter-search" placeholder="Buscar cuenta por nombre..." autocomplete="off" aria-expanded="false" aria-controls="accountFilterDropdown">
+                        <span class="account-filter-summary" id="accountFilterSummary">Todas</span>
+                        <i class="fa-solid fa-chevron-down account-filter-chevron"></i>
+                    </div>
+                    <div class="account-filter-dropdown" id="accountFilterDropdown" hidden>
+                        <div class="account-filter-options" id="accountFilterOptions">
+                            {% for acc in movement_accounts %}
+                                <label class="account-filter-option" data-search="{{ acc.name|lower }} {{ acc.code|lower }}">
+                                    <input type="checkbox" name="account_id" value="{{ acc.id }}" {% if acc.id in selected_account_ids %}checked{% endif %}>
+                                    <span class="account-filter-check"><i class="fa-solid fa-check"></i></span>
+                                    <span class="account-filter-name">{{ acc.name }}</span>
+                                    <code class="account-filter-code">{{ acc.code }}</code>
+                                </label>
+                            {% endfor %}
+                            <div class="account-filter-empty" id="accountFilterEmpty" hidden>No se encontraron cuentas con ese nombre.</div>
+                        </div>
+                        <div class="account-filter-footer">
+                            <button type="button" class="account-filter-clear" id="accountFilterClear">Limpiar selección</button>
+                            <span id="accountFilterCount">0 seleccionadas</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-secondary btn-sm">
+                <i class="fa-solid fa-filter"></i> Filtrar
+            </button>
+        </form>
+
+        <div class="report-actions">
+            {% if selected_account_ids %}
+                <a href="?start_date={{ start_date }}&end_date={{ end_date }}&export=excel{% for aid in selected_account_ids %}&account_id={{ aid }}{% endfor %}" class="btn btn-success btn-sm" title="Exportar a Excel">
+                    <i class="fa-solid fa-file-excel"></i> Excel
+                </a>
+                <a href="?start_date={{ start_date }}&end_date={{ end_date }}&export=pdf{% for aid in selected_account_ids %}&account_id={{ aid }}{% endfor %}" class="btn btn-danger btn-sm" title="Exportar a PDF">
+                    <i class="fa-solid fa-file-pdf"></i> PDF
+                </a>
+            {% else %}
+                <a href="?start_date={{ start_date }}&end_date={{ end_date }}&export=excel" class="btn btn-success btn-sm" title="Exportar a Excel">
+                    <i class="fa-solid fa-file-excel"></i> Excel
+                </a>
+                <a href="?start_date={{ start_date }}&end_date={{ end_date }}&export=pdf" class="btn btn-danger btn-sm" title="Exportar a PDF">
+                    <i class="fa-solid fa-file-pdf"></i> PDF
+                </a>
+            {% endif %}
+            <a href="{% url 'journal_entry_create' %}" class="btn btn-primary btn-sm">
+                <i class="fa-solid fa-plus"></i> Nuevo Asiento
+            </a>
+        </div>
+    </div>
+
+    {% if entries %}
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Nro</th>
+                    <th>Fecha</th>
+                    <th>Tipo</th>
+                    <th>Concepto</th>
+                    <th>Referencia</th>
+                    <th class="text-right">Debe ($)</th>
+                    <th class="text-right">Haber ($)</th>
+                    <th>Estado</th>
+                    <th class="text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in entries %}
+                    <tr class="summary-row" onclick="toggleDetail(this)" title="Clic para ver el detalle">
+                        <td><span class="row-chevron"><i class="fa-solid fa-chevron-right"></i></span><strong>#{{ entry.entry_number }}</strong></td>
+                        <td>{{ entry.date|date:"d/m/Y" }}</td>
+                        <td><span class="badge">{{ entry.get_entry_type_display }}</span></td>
+                        <td title="{{ entry.concept }}">{{ entry.concept|truncatechars:60 }}</td>
+                        <td>{% if entry.reference %}<code>{{ entry.reference }}</code>{% else %}-{% endif %}</td>
+                        <td class="text-right">${{ entry.total_debit|floatformat:2 }}</td>
+                        <td class="text-right">${{ entry.total_credit|floatformat:2 }}</td>
+                        <td>
+                            <span class="status-badge {% if entry.status == 'POSTED' %}posted{% else %}draft{% endif %}">
+                                {{ entry.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="actions-cell" onclick="event.stopPropagation()">
+                            <button type="button" class="btn btn-secondary btn-sm btn-toggle" onclick="toggleDetail(this)" title="Ver detalle del asiento">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                            <a href="{% url 'journal_entry_edit' entry.id %}" class="btn btn-info btn-sm" title="Editar">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </a>
+                            <a href="{% url 'template_save_existing' entry.id %}" class="btn btn-secondary btn-sm" title="Guardar como plantilla reutilizable">
+                                <i class="fa-solid fa-clone"></i>
+                            </a>
+                            <form method="POST" action="{% url 'journal_entry_delete' entry.id %}" onsubmit="return confirm('¿Está seguro de que desea eliminar el asiento #{{ entry.entry_number }}? Esta acción no se puede deshacer.');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger btn-sm" title="Eliminar">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    <tr class="detail-row">
+                        <td colspan="9">
+                            <div class="detail-inner">
+                                <div class="detail-title">
+                                    Detalle del Asiento #{{ entry.entry_number }}
+                                    {% if entry.reference %}(Ref: {{ entry.reference }}){% endif %}
+                                </div>
+                                <table class="custom-table detail-table">
+                                    <thead>
+                                        <tr>
+                                            <th class="col-14">Código</th>
+                                            <th class="col-24">Cuenta Contable</th>
+                                            <th class="col-30">Detalle</th>
+                                            <th class="col-16">Referencia</th>
+                                            <th class="col-13 text-right">Debe ($)</th>
+                                            <th class="col-13 text-right">Haber ($)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for line in entry.lines.all %}
+                                            <tr>
+                                                <td><code>{{ line.account.code }}</code></td>
+                                                <td>{{ line.account.name }}</td>
+                                                <td class="text-secondary">{{ line.concept|default:"-" }}</td>
+                                                <td>{% if line.entry.reference %}<code>{{ line.entry.reference }}</code>{% else %}-{% endif %}</td>
+                                                <td class="text-right">
+                                                    {% if line.debit > 0 %}<strong>${{ line.debit|floatformat:2 }}</strong>{% else %}-{% endif %}
+                                                </td>
+                                                <td class="text-right">
+                                                    {% if line.credit > 0 %}<strong>${{ line.credit|floatformat:2 }}</strong>{% else %}-{% endif %}
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr class="tfoot-total tfoot-right-label">
+                                            <td colspan="4">TOTALES ASENTADOS:</td>
+                                            <td class="text-right">${{ entry.total_debit|floatformat:2 }}</td>
+                                            <td class="text-right">${{ entry.total_credit|floatformat:2 }}</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="empty-state">
+            <i class="fa-solid fa-book-journal-whills"></i>
+            <h3>No se han registrado asientos contables</h3>
+            <p>Comienza creando asientos para registrar transacciones de ingresos, egresos o compras.</p>
+            <a href="{% url 'journal_entry_create' %}" class="btn btn-primary">
+                <i class="fa-solid fa-plus"></i> Registrar Primer Asiento
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleDetail(el) {
+    const row = el.tagName === 'TR' ? el : el.closest('tr');
+    const detail = row.nextElementSibling;
+    if (!detail || !detail.classList.contains('detail-row')) return;
+
+    const isOpen = detail.classList.toggle('open');
+    row.classList.toggle('open', isOpen);
+    detail.style.display = isOpen ? 'table-row' : 'none';
+
+    const btn = row.querySelector('.btn-toggle');
+    if (btn) {
+        const icon = btn.querySelector('i');
+        icon.className = isOpen ? 'fa-solid fa-minus' : 'fa-solid fa-eye';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.detail-row').forEach(r => r.style.display = 'none');
+
+    const picker = document.getElementById('accountFilterPicker');
+    const dropdown = document.getElementById('accountFilterDropdown');
+    const search = document.getElementById('accountFilterSearch');
+    const summary = document.getElementById('accountFilterSummary');
+    const count = document.getElementById('accountFilterCount');
+    const clear = document.getElementById('accountFilterClear');
+    const empty = document.getElementById('accountFilterEmpty');
+    const options = Array.from(document.querySelectorAll('.account-filter-option'));
+
+    const normalize = value => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+
+    function updateSelection() {
+        const selected = options.filter(option => option.querySelector('input').checked);
+        count.textContent = `${selected.length} seleccionada${selected.length === 1 ? '' : 's'}`;
+        if (!selected.length) {
+            summary.textContent = 'Todas';
+        } else {
+            summary.textContent = `${selected.length} seleccionada${selected.length === 1 ? '' : 's'}`;
+        }
+    }
+
+    function closeDropdown() {
+        dropdown.hidden = true;
+        search.setAttribute('aria-expanded', 'false');
+        picker.classList.remove('open');
+    }
+
+    function openDropdown() {
+        dropdown.hidden = false;
+        search.setAttribute('aria-expanded', 'true');
+        picker.classList.add('open');
+    }
+
+    search.addEventListener('focus', openDropdown);
+    search.addEventListener('click', openDropdown);
+
+    search.addEventListener('input', () => {
+        const term = normalize(search.value);
+        let visible = 0;
+        options.forEach(option => {
+            const matches = normalize(option.dataset.search).includes(term);
+            option.hidden = !matches;
+            if (matches) visible += 1;
+        });
+        empty.hidden = visible !== 0;
+    });
+
+    options.forEach(option => option.querySelector('input').addEventListener('change', updateSelection));
+    clear.addEventListener('click', () => {
+        options.forEach(option => option.querySelector('input').checked = false);
+        updateSelection();
+        search.focus();
+    });
+    document.addEventListener('click', event => {
+        if (!picker.contains(event.target)) closeDropdown();
+    });
+    picker.addEventListener('keydown', event => {
+        if (event.key === 'Escape') {
+            closeDropdown();
+            search.blur();
+        }
+    });
+
+    updateSelection();
+});
+</script>
+{% endblock %}
