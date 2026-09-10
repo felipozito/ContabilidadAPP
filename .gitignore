@@ -1,0 +1,30 @@
+# Entorno virtual
+venv/
+.venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Base de datos local
+db.sqlite3
+
+# Media subida por usuarios
+media/
+
+# Estáticos recopilados
+staticfiles/
+
+# Logs
+*.log
+app.log
+
+# Configuración sensible
+.env
+
+# Paquetes portables de escritorio (Python embebido de Windows)
+python/
+*.zip

@@ -1,0 +1,31 @@
+services:
+  # Servicio web principal (Django + Gunicorn)
+  - type: web
+    name: contabilidadapp
+    runtime: python
+    plan: free
+    buildCommand: |
+      pip install --upgrade pip
+      pip install -r requirements.txt
+      python manage.py collectstatic --noinput
+    startCommand: bash start.sh
+    healthCheckPath: /login/
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.10
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_DEBUG
+        value: "false"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: contabilidadapp-db
+          property: connectionString
+
+databases:
+  # Base de datos PostgreSQL (gratuita en el plan free)
+  - name: contabilidadapp-db
+    plan: free
+    databaseName: contabilidad
+    user: contabilidad
